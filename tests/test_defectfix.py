@@ -78,6 +78,24 @@ def test_verify_passes_a_real_fix_with_a_reproducing_test(repo):
     assert out["red"]["exit_code"] == 1 and out["green"]["exit_code"] == 0
 
 
+def test_verify_works_on_a_project_in_a_subfolder(tmp_path):
+    top = tmp_path / "mono"
+    app = top / "services" / "app"
+    (app / "tests").mkdir(parents=True)
+    (app / "pytest.ini").write_text("[pytest]\npythonpath = .\n")
+    (app / "calc.py").write_text("def is_adult(age):\n    return age > 18\n")
+    (app / "tests" / "test_calc.py").write_text("from calc import is_adult\n\ndef test_child():\n    assert not is_adult(10)\n")
+    _git(top, "init", "-q", "-b", "main")
+    _commit(top, "base")
+    base = _git(top, "rev-parse", "HEAD")
+    (app / "calc.py").write_text("def is_adult(age):\n    return age >= 18\n")
+    (app / "tests" / "test_calc.py").write_text((app / "tests" / "test_calc.py").read_text() + "\ndef test_eighteen():\n    assert is_adult(18)\n")
+    _commit(top, "fix")
+    out = verify.verify(app, base, CMD)
+    assert out["status"] == "pass", out["reasons"]
+    assert out["red"]["failed_tests"] == ["tests/test_calc.py::test_eighteen"]
+
+
 def test_verify_fails_a_test_that_passes_on_the_old_code(repo):
     r, base = repo
     (r / "calc.py").write_text("def is_adult(age):\n    return age >= 18\n")

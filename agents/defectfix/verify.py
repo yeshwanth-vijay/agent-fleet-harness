@@ -59,8 +59,10 @@ def verify(repo: Path, base: str, test_cmd: list[str]) -> dict:
     red = None
     if tests:
         prefix = git("rev-parse", "--show-prefix").strip().rstrip("/")
+        top = git("rev-parse", "--show-toplevel").strip()
+        # from a subfolder, git archive narrows to that subfolder again inside the tree and returns nothing
         tar = subprocess.run(["git", "archive", "--format=tar", f"{base}:{prefix}" if prefix else base],
-                             cwd=repo, capture_output=True, check=True).stdout
+                             cwd=top, capture_output=True, check=True).stdout
         with tempfile.TemporaryDirectory(prefix="verify-red-") as tmp:
             with tarfile.open(fileobj=io.BytesIO(tar)) as tf:
                 tf.extractall(tmp, filter="data")
