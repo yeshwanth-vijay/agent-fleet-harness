@@ -255,7 +255,9 @@ def judge(state: FleetState) -> dict:
     rep = {k: v for k, v in (state.get("citation_report") or {}).items() if k != "details"}
     r, upd = _seat(state, "judge", f"Query: {state['query']}\n\nRubric:\n{rubric_text()}\n\nDeterministic citation report: {json.dumps(rep)}\n\n<article>\n{state['draft']}\n</article>",
                    schema=JUDGE_SCHEMA)
-    j = (r.structured if r and r.ok else None) or {"verdict": "APPROVE", "scores": {}, "feedback": "judge unavailable", "skipped": True}
+    j = (r.structured if r and r.ok else None) or {
+        "verdict": "UNAVAILABLE", "scores": {}, "skipped": True,
+        "feedback": f"judge unavailable: {r.error if r else 'seat skipped by the budget governor'}"}
     _log(state, f"judge: {j['verdict']} {j.get('scores')}")
     return {**upd, "judge": j, "replans": state.get("replans", 0) + (1 if j["verdict"] == "REJECT" else 0)}
 
@@ -267,7 +269,9 @@ def after_judge(state: FleetState) -> str:
 
 
 def finalize(state: FleetState) -> dict:
-    return {"final": state["draft"], "status": "completed"}
+    """Running out of replans, or a judge that never answered, is not approval."""
+    approved = (state.get("judge") or {}).get("verdict") == "APPROVE"
+    return {"final": state["draft"], "status": "completed" if approved else "needs_review"}
 
 
 # ------------------------------------------------------------------- graph

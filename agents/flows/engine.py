@@ -15,9 +15,11 @@ Stage kinds
   command  runs a fixed command (tests, a build, a script), output kept in the stage folder.
   gate     a pure decision point: runs only after approval and records who decided.
 
-Placeholders in prompts, commands, cwd and branch names:
-  {repo} target repo · {wt} worktree · {branch} · {run} run folder · {stage} this stage's folder
-  {harness} this repo · {goal} · {input:<name>} a file passed with --input name=path
+Placeholders in prompts, tools, commands, cwd and branch names:
+  {repo} target repo · {wt} worktree · {branch} · {base} commit the worktree started from · {run} run folder
+  {run_id} · {stage} this stage's folder · {harness} this repo · {python} the interpreter running the flow
+  {goal} · {input:<name>} a file passed with --input name=path · {var:<name>} a value a command stage published
+  by writing vars.json into its stage folder
 
 Loops: a stage with "loop": {"back_to": "<stage>", "max": 3, "until": {"file": "verify.json", "field": "status",
 "equals": "pass"}} checks its own output after it finishes. If the check fails and fewer than `max` iterations
@@ -35,6 +37,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -111,12 +114,13 @@ class FlowRun:
 
     def fmt(self, s: str, sid: str = "") -> str:
         ws = self.state["workspace"]
-        rep = {"{repo}": str(self.repo), "{run}": str(self.dir), "{stage}": str(self.dir / "stages" / sid),
-               "{harness}": str(ROOT), "{wt}": ws.get("wt", "(not created yet)"), "{branch}": ws.get("branch", ""),
-               "{goal}": self.flow["goal"]}
+        rep = {"{repo}": str(self.repo), "{run}": str(self.dir), "{run_id}": self.run_id, "{stage}": str(self.dir / "stages" / sid),
+               "{harness}": str(ROOT), "{python}": sys.executable, "{wt}": ws.get("wt", "(not created yet)"),
+               "{branch}": ws.get("branch", ""), "{base}": ws.get("base", ""), "{goal}": self.flow["goal"]}
         for k, v in rep.items():
             s = s.replace(k, v)
-        return re.sub(r"\{input:([A-Za-z0-9_-]+)\}", lambda m: self.state["inputs"].get(m.group(1), m.group(0)), s)
+        s = re.sub(r"\{input:([A-Za-z0-9_-]+)\}", lambda m: self.state["inputs"].get(m.group(1), m.group(0)), s)
+        return re.sub(r"\{var:([A-Za-z0-9_-]+)\}", lambda m: str(self.state.get("vars", {}).get(m.group(1), m.group(0))), s)
 
     def sh(self, cmd: list[str], cwd: Path, timeout=1800, check=True) -> subprocess.CompletedProcess:
         p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout)
@@ -263,13 +267,16 @@ class FlowRun:
         cwd = Path(self.state["workspace"]["wt"]) if writes else self.dir
         if writes and not cwd.exists():
             raise RuntimeError("worktree missing; run the prepare stage first")
-        tools = list(stage.get("tools", ["Read", "Grep", "Glob"]))
+        tools = [self.fmt(t, sid) for t in stage.get("tools", ["Read", "Grep", "Glob"])]
         prompt = (self._context(stage) + "\n\nYour task:\n" + self.fmt(stage["prompt"], sid) +
                   f"\n\nDeliverables to return in files: {', '.join(stage.get('outputs', []))}. Return the JSON.")
         (out / "prompt.md").write_text(prompt)
-        reads = [str(self.dir), str(self.repo)] + [os.path.dirname(p) for p in self.state["inputs"].values()]
-        if self.state["workspace"].get("wt"):
-            reads.append(self.state["workspace"]["wt"])
+        if writes:  # a writing seat sees only the run folder and its worktree, never the original checkout
+            reads = [str(self.dir), str(cwd)]
+        else:
+            reads = [str(self.dir), str(self.repo)] + [os.path.dirname(p) for p in self.state["inputs"].values()]
+            if self.state["workspace"].get("wt"):
+                reads.append(self.state["workspace"]["wt"])
         r = run_seat(sid, prompt, model=stage.get("model", "sonnet"), system=SYSTEM, temperature=stage.get("temperature", 0.3),
                      tools=tools, json_schema=RESULT_SCHEMA, max_turns=stage.get("max_turns", 60),
                      budget_usd=stage.get("budget_usd", 3.0), cwd=str(cwd), add_dirs=sorted(set(reads)),
@@ -321,14 +328,18 @@ class FlowRun:
         out.mkdir(parents=True, exist_ok=True)
         top = Path(self.sh(["git", "rev-parse", "--show-toplevel"], self.repo).stdout.strip())
         rel = self.repo.relative_to(top)
-        branch = self.fmt(stage.get("branch", "flow/{run_id}").replace("{run_id}", self.run_id), stage["id"])
+        branch = self.fmt(stage.get("branch", "flow/{run_id}"), stage["id"])
+        if "{" in branch:
+            raise ValueError(f"branch name has an unresolved placeholder: {branch}")
         wt_root = self.dir / "wt"
         notes = []
+        base = self.state["workspace"].get("base") or self.sh(["git", "rev-parse", "HEAD"], top).stdout.strip()
+        base_branch = self.state["workspace"].get("base_branch") or self.sh(["git", "rev-parse", "--abbrev-ref", "HEAD"], top).stdout.strip()
         if not wt_root.exists():
-            base = self.sh(["git", "rev-parse", "--short", "HEAD"], top).stdout.strip()
-            self.sh(["git", "worktree", "add", "-q", "-b", branch, str(wt_root), "HEAD"], top)
-            notes.append(f"worktree {wt_root} on branch {branch} from {top.name}@{base}")
-        self.state["workspace"] = {"wt": str(wt_root / rel), "wt_root": str(wt_root), "branch": branch, "repo_root": str(top)}
+            self.sh(["git", "worktree", "add", "-q", "-b", branch, str(wt_root), base], top)
+            notes.append(f"worktree {wt_root} on branch {branch} from {base_branch}@{base[:10]}")
+        self.state["workspace"] = {"wt": str(wt_root / rel), "wt_root": str(wt_root), "branch": branch, "repo_root": str(top),
+                                   "base": base, "base_branch": base_branch}
         (out / "workspace.md").write_text("# Workspace\n\n" + "\n".join(f"- {n}" for n in notes) + "\n")
         self.state["stages"][stage["id"]]["summary"] = "; ".join(notes) or "worktree already present"
         self.log("  " + ("; ".join(notes) or "worktree already present"))
@@ -349,5 +360,7 @@ class FlowRun:
         p = self.sh(cmd, cwd, timeout=stage.get("timeout_s", 3600), check=False)
         (out / "command.log").write_text(f"$ {' '.join(cmd)}\n(cwd {cwd})\n\n{p.stdout}\n{p.stderr}")
         self.state["stages"][stage["id"]]["summary"] = f"exit {p.returncode}: {' '.join(cmd[:4])} …"
+        if (out / "vars.json").exists():
+            self.state.setdefault("vars", {}).update(json.loads((out / "vars.json").read_text()))
         if p.returncode != 0 and not stage.get("allow_failure"):
             raise RuntimeError(f"command exited {p.returncode}; see stages/{stage['id']}/command.log")
