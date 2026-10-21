@@ -29,13 +29,14 @@ def main() -> int:
     ap.add_argument("--input", action="append", default=[], metavar="NAME=PATH", help="a file the flow reads")
     ap.add_argument("--approve", action="append", default=[], help="stage id to approve before continuing")
     ap.add_argument("--rerun", help="stage id to reset (with everything after it) before continuing")
+    ap.add_argument("--by", default="you (terminal)", help="who is approving, as recorded in the run")
     a = ap.parse_args()
     inputs = dict(i.split("=", 1) for i in a.input)
     run = FlowRun(a.resume, a.flow, a.repo, inputs)
     if a.rerun:
         run.rerun(a.rerun)
     for s in a.approve:
-        run.approve(s)
+        run.approve(s, a.by)
     st = run.go()
     print(json.dumps({k: st.get(k) for k in ("run_id", "status", "waiting_for", "error")}, indent=2))
     return 0 if st["status"] in ("completed", "waiting_approval") else 2

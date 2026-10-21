@@ -1,0 +1,29 @@
+{
+  "verdict": "APPROVE",
+  "acceptance": [
+    {
+      "criterion": "A task due today is not overdue.",
+      "met": true,
+      "evidence": "taskboard/tasks.py:25 uses `task.due < today` (it was `<=`). tests/test_tasks.py::test_task_due_today_is_not_overdue fails on the base code and passes with the fix (verify.json red/green)."
+    },
+    {
+      "criterion": "A completed task is never overdue, whatever its due date.",
+      "met": true,
+      "evidence": "taskboard/tasks.py:25 now starts with `not task.done`. tests/test_tasks.py::test_completed_task_is_never_overdue (done task due 2026-10-15) fails on the base code and passes with the fix. test_summary_and_overdue_list_match_defect_sample also checks the done, late 'Close Q3 books' task."
+    },
+    {
+      "criterion": "Regression tests cover both cases and fail on the current code.",
+      "met": true,
+      "evidence": "verify.json red run: exit 1, 3 failures (the three new tests). Green run: exit 0, 7 passed, 0 failed. The sample test asserts summary overdue == 1 and that the overdue list is ['Renew TLS certificate'], which matches the Expected section of the defect."
+    }
+  ],
+  "findings": [
+    {
+      "severity": "low",
+      "file": "demo/taskboard/tests/test_tasks.py",
+      "line": 34,
+      "issue": "No test runs the CLI on tasks.json. The sample test copies the data inline, so if tasks.json or the CLI wiring drifted, these tests would not notice. The plan listed this test as optional.",
+      "fix": "Optional follow-up: run cli.main on tasks.json with --today 2026-10-21 under capsys and assert 'Overdue: 1' is in the output. This does not block merge."
+    }
+  ]
+}
