@@ -1,0 +1,19 @@
+# Secrets — never commit
+.env
+*.key
+*credentials*
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Run output (checkpoints, telemetry, worktrees, stage files)
+runs/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

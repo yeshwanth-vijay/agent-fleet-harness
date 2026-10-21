@@ -1,0 +1,163 @@
+{
+  "version": "2026-10-12",
+  "note": "Golden research tasks for the fleet. Each task lists sub-questions, topics the answer must cover, claims it must not make, and citations it must include.",
+  "tasks": [
+    {
+      "task_id": "caching-strategies",
+      "query": "Caching strategies for LLM chatbots: response caching, semantic caching, embedding caching, provider prompt caching, conversation caching, Redis/Memcached; invalidation strategies and realistic cost savings.",
+      "sub_questions": [
+        "What types of caching are useful in chatbot systems?",
+        "How does semantic caching work for LLM responses and how do you choose a similarity threshold?",
+        "When should you cache embeddings vs full responses?",
+        "How do provider prompt caches (Anthropic, OpenAI, Gemini) work and what do they cost?",
+        "What are cache invalidation and privacy/scoping strategies for conversational AI?",
+        "How much cost savings can caching realistically provide?"
+      ],
+      "expected_topics": [
+        "exact-match response caching",
+        "semantic caching with embeddings and a similarity threshold",
+        "provider prompt caching (cache reads cheaper than base input)",
+        "embedding caching",
+        "cache invalidation / TTL strategies",
+        "per-user or per-tenant cache key scoping",
+        "false-positive risk of semantic caches",
+        "Redis or another cache store"
+      ],
+      "forbidden_claims": [
+        "Anthropic prompt cache reads cost the same as normal input tokens",
+        "OpenAI prompt caching requires explicit cache_control markers in the request"
+      ],
+      "required_citations": [
+        "docs.anthropic.com or anthropic.com prompt caching",
+        "platform.openai.com prompt caching"
+      ],
+      "min_word_count": 2500,
+      "max_word_count": 8000,
+      "last_verified_date": "2026-10-12"
+    },
+    {
+      "task_id": "chatbot-agent-memory-response-quality-2026",
+      "query": "How to maintain memory for AI chatbot agents (short-term, long-term, episodic/semantic/procedural memory, memory stores, summarization, retrieval) and how to improve response quality (grounding, prompt design, self-critique, reranking, evaluation).",
+      "sub_questions": [
+        "Which memory types matter for chatbot agents and when do you use each?",
+        "What are the leading memory frameworks/stores (Mem0, Letta/MemGPT, Zep, LangGraph) and their trade-offs?",
+        "How do you compress or summarize conversation history without losing important facts?",
+        "How do you persist and retrieve long-term memory safely (scoping, deletion, privacy)?",
+        "Which techniques measurably improve response quality (grounding, reranking, self-critique)?",
+        "How do you evaluate memory and response quality?"
+      ],
+      "expected_topics": [
+        "short-term vs long-term memory",
+        "episodic, semantic and procedural memory",
+        "conversation summarization / compaction",
+        "Mem0, Letta (MemGPT) or Zep compared",
+        "retrieval of memories (vector or graph)",
+        "memory privacy, scoping or deletion",
+        "grounding / RAG with reranking",
+        "self-critique or reflection loops",
+        "evaluation of memory or response quality"
+      ],
+      "forbidden_claims": [
+        "Letta and MemGPT are unrelated projects",
+        "No production model offers a context window larger than 200,000 tokens"
+      ],
+      "required_citations": [
+        "docs.letta.com or github.com/letta-ai",
+        "docs.mem0.ai or github.com/mem0ai"
+      ],
+      "min_word_count": 2500,
+      "max_word_count": 8000,
+      "last_verified_date": "2026-10-12"
+    },
+    {
+      "task_id": "prod-grade-agents-first-run-2026",
+      "query": "Strategies to make agentic systems reliable on the first run: eval-driven development, context engineering, guardrails, deterministic scaffolding, planner/executor/critic loops, self-correction, and scaling an agent fleet without regressions.",
+      "sub_questions": [
+        "Why do agents perform poorly on first runs?",
+        "What does eval-driven development look like for agents?",
+        "Which architectural patterns raise first-run reliability?",
+        "How do you scale a fleet without regressions?"
+      ],
+      "expected_topics": [
+        "golden datasets / eval-driven development",
+        "structured outputs and validation",
+        "planner-executor-critic loops",
+        "guardrails",
+        "regression testing in CI",
+        "observability / tracing"
+      ],
+      "forbidden_claims": [
+        "Claude Opus 5 accepts a temperature parameter"
+      ],
+      "required_citations": [
+        "anthropic.com building effective agents"
+      ],
+      "min_word_count": 2500,
+      "max_word_count": 8000,
+      "last_verified_date": "2026-10-12"
+    },
+    {
+      "task_id": "model-cost-efficiency-prompt-banks",
+      "query": "How to select the right LLM per task balancing cost-per-task vs quality (tiers, routing, cascades, caching, output-token economics) and how to use prompt banks for agent roles.",
+      "sub_questions": [
+        "Cost per token vs cost per task",
+        "Model tiers and what each handles",
+        "Routing approaches and measured savings",
+        "Prompt banks for agent roles"
+      ],
+      "expected_topics": [
+        "cost per task vs cost per token",
+        "model tiers",
+        "routing or cascades",
+        "caching",
+        "output tokens cost more than input",
+        "prompt libraries / versioned prompts"
+      ],
+      "forbidden_claims": [
+        "Output tokens are cheaper than input tokens on frontier models"
+      ],
+      "required_citations": [
+        "github.com/lm-sys/RouteLLM"
+      ],
+      "min_word_count": 2500,
+      "max_word_count": 8000,
+      "last_verified_date": "2026-10-12"
+    },
+    {
+      "task_id": "ultimate-agent-fleet-harness-evals-2026",
+      "query": "A visual, step-by-step tutorial on building the ultimate agent fleet in 2026 (harness, fleet roster, evals), ending with a phased migration plan from a fixed research pipeline.",
+      "sub_questions": [
+        "What harness components matter and why does a better harness beat a stronger model?",
+        "Which fleet seats, models, temperatures and topology?",
+        "How to prove v2 beats v1: golden sets, LLM-judge failure modes, regression gates, observability, scorecard?",
+        "What is the phased migration from the current pipeline?"
+      ],
+      "expected_topics": [
+        "agent loop",
+        "tool permissions and sandboxing",
+        "context compaction",
+        "durability and resume",
+        "cost governance",
+        "telemetry / OpenTelemetry GenAI",
+        "fleet roster with models and tools",
+        "orchestration topology comparison",
+        "golden task set",
+        "LLM-as-judge failure modes",
+        "regression gate in CI",
+        "v1 vs v2 scorecard",
+        "phased migration plan",
+        "mermaid diagrams of architecture"
+      ],
+      "forbidden_claims": [
+        "a judge from the same model family is free of self-preference bias",
+        "LLM-as-judge scores need no human calibration"
+      ],
+      "required_citations": [
+        "anthropic.com"
+      ],
+      "min_word_count": 5000,
+      "max_word_count": 20000,
+      "last_verified_date": "2026-10-12"
+    }
+  ]
+}

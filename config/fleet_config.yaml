@@ -1,0 +1,75 @@
+# Research fleet roster. Model tiers resolve through Claude Code on the
+# Claude login; there are no API keys anywhere in this config.
+# temperature is nominal: Claude Code maps it to --effort plus a steering line.
+
+model_tiers:
+  opus: opus
+  sonnet: sonnet
+  haiku: haiku
+
+run:
+  budget_usd: 12.00          # Cost Governor cap for one article (list-price estimate)
+  downgrade_at: 0.80         # downgrade one tier after 80% of budget is spent
+  max_revisions: 2           # critic -> synthesizer loops
+  max_replans: 1             # judge REJECT -> planner loops
+  compact_model: haiku
+
+seats:
+  planner:
+    tier: sonnet
+    temperature: 0.3
+    tools: []
+    max_turns: 3
+    budget_usd: 0.60
+    required: true
+  scout:
+    tier: sonnet
+    temperature: 0.5
+    tools: [WebSearch, WebFetch]
+    max_turns: 30
+    budget_usd: 2.50
+    required: false
+    untrusted_input: true
+  github:
+    tier: haiku
+    temperature: 0.3
+    tools: [WebSearch, WebFetch]
+    max_turns: 20
+    budget_usd: 1.00
+    required: false
+    untrusted_input: true
+  codebase:
+    tier: sonnet
+    temperature: 0.2
+    tools: [Read, Grep, Glob]
+    max_turns: 30
+    budget_usd: 2.00
+    required: false
+  synthesizer:
+    tier: sonnet
+    temperature: 0.6
+    tools: []
+    max_turns: 3
+    budget_usd: 2.50
+    required: true
+  editor:
+    tier: haiku
+    temperature: 0.3
+    tools: []
+    max_turns: 3
+    budget_usd: 0.80
+    required: false
+  critic:
+    tier: sonnet
+    temperature: 0.5
+    tools: []
+    max_turns: 3
+    budget_usd: 0.80
+    required: false
+  judge:
+    tier: opus
+    temperature: 0.1
+    tools: []
+    max_turns: 3
+    budget_usd: 1.50
+    required: true
