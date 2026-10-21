@@ -28,6 +28,16 @@ def _read(p: Path) -> str:
     return p.read_text().strip() if p.exists() else ""
 
 
+def _demote(md: str, levels: int = 2) -> str:
+    """Nest a document's headings under a PR section (code blocks untouched)."""
+    out, fence = [], False
+    for line in md.splitlines():
+        if line.lstrip().startswith("```"):
+            fence = not fence
+        out.append("#" * levels + line if not fence and line.startswith("#") else line)
+    return "\n".join(out)
+
+
 def build(run: Path) -> tuple[dict, list[str]]:
     st = _read_json(run / "state.json")
     s = run / "stages"
@@ -42,7 +52,7 @@ def build(run: Path) -> tuple[dict, list[str]]:
         problems.append(f"the reviewer did not approve (verdict {review.get('verdict')!r})")
     wt = Path(ws.get("wt", "."))
     stat = subprocess.run(["git", "diff", "--stat", ws.get("base", "HEAD"), "HEAD", "--", "."], cwd=wt,
-                          capture_output=True, text=True).stdout.strip() if wt.exists() else ""
+                          capture_output=True, text=True).stdout.strip("\n") if wt.exists() else ""
     red, green = verify.get("red") or {}, verify.get("green") or {}
     approval = st.get("approvals", {}).get("approve-plan", {})
     stages = st.get("stages", {})
@@ -51,7 +61,7 @@ def build(run: Path) -> tuple[dict, list[str]]:
     body = "\n\n".join(x for x in [
         f"Fixes **{defect.get('key')}** ({defect.get('type', 'Bug')}, {defect.get('priority', '')} priority), "
         f"read from `{defect.get('source')}`.",
-        "## Root cause\n\n" + (_read(s / "investigate" / "rootcause.md") or "(missing)"),
+        "## Root cause\n\n" + (_demote(_read(s / "investigate" / "rootcause.md")) or "(missing)"),
         "## Change\n\n```\n" + (stat or "(no diff)") + "\n```",
         "## Proof\n\n"
         f"- **Red:** the new or changed tests fail on the base commit `{str(verify.get('base', ''))[:10]}`: "
@@ -59,7 +69,7 @@ def build(run: Path) -> tuple[dict, list[str]]:
         f"- **Green:** the whole suite passes on this branch: {green.get('passed', 0)} passed, {green.get('failed', 0)} failed.\n"
         f"- Tests changed: {', '.join(f'`{t}`' for t in verify.get('changed', {}).get('tests', []))}; "
         f"code changed: {', '.join(f'`{t}`' for t in verify.get('changed', {}).get('source', []))}.",
-        f"## Review\n\nVerdict: **{review.get('verdict')}**\n\n" + _read(s / "review" / "review.md"),
+        f"## Review\n\nVerdict: **{review.get('verdict')}**\n\n" + _demote(_read(s / "review" / "review.md")),
         "## How this was produced\n\n"
         f"Agent flow run `{st.get('run_id')}`. The root cause and fix plan were approved by {approval.get('by', 'nobody')} "
         f"at {approval.get('at', '?')}. Fix iterations: {st.get('loops', {}).get('verify', 1)} until verify passed. "

@@ -1,0 +1,33 @@
+{
+  "status": "pass",
+  "reasons": [],
+  "base": "fd526f63248d1c0aa3a73f79d35c0ca63376bed1",
+  "changed": {
+    "tests": [
+      "tests/test_tasks.py"
+    ],
+    "source": [
+      "taskboard/tasks.py"
+    ]
+  },
+  "green": {
+    "cmd": "~/agent-fleet-harness/.venv/bin/python -m pytest -q -rf",
+    "exit_code": 0,
+    "passed": 7,
+    "failed": 0,
+    "errors": 0,
+    "failed_tests": []
+  },
+  "red": {
+    "cmd": "~/agent-fleet-harness/.venv/bin/python -m pytest -q -rf tests/test_tasks.py",
+    "exit_code": 1,
+    "passed": 4,
+    "failed": 3,
+    "errors": 0,
+    "failed_tests": [
+      "tests/test_tasks.py::test_task_due_today_is_not_overdue",
+      "tests/test_tasks.py::test_completed_task_is_never_overdue",
+      "tests/test_tasks.py::test_summary_and_overdue_list_match_defect_sample"
+    ]
+  }
+}

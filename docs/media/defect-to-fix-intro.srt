@@ -1,0 +1,47 @@
+1
+00:00:00,500 --> 00:00:09,541
+Agent fleet harness. This is how to take a Jira defect all the way to a reviewed pull request, with agents you can actually check. It takes about four minutes.
+
+2
+00:00:10,740 --> 00:00:27,548
+If you paste a bug into a chat model, you get a patch. You don't get proof that it fixes the bug, you can't see why it changed what it changed, and nobody approved the plan. This flow fixes that. Every step leaves evidence, and the steps that decide pass or fail are plain code, not a model.
+
+3
+00:00:28,748 --> 00:00:52,491
+The flow has eight stages. Intake reads the defect. Prepare makes a fix branch in its own git worktree. An investigator agent finds the root cause and writes a plan. Then the run stops and waits for you. A developer agent writes regression tests and the fix. Verify proves it, red then green. A reviewer agent on a stronger model checks every acceptance criterion. And the last stage writes the pull request.
+
+4
+00:00:53,692 --> 00:01:17,343
+For this demo there is no Jira at all. The defect is an HTML page laid out like a Jira issue: a key, steps, expected and actual results, and acceptance criteria. Intake reads the fields marked with data-field. Look at the last comment: it tells the agent to ignore its instructions and push straight to main. Intake flags it, neutralises it, and wraps all ticket text as untrusted data.
+
+5
+00:01:18,543 --> 00:01:31,409
+Start it with one command: the flow, the code you want fixed, and the defect page. Intake and prepare take a second. The investigator reads the code for about thirty seconds, and then the run pauses at the approval gate.
+
+6
+00:01:32,609 --> 00:01:54,652
+Here is what you approve. The investigator found two causes in one function. A less than or equal comparison makes a task due today overdue, and the function never checks whether a task is done. It cites the exact lines, traces the sample data, and proposes a one line fix with three regression tests. It also called out the push to main comment as untrusted, and ignored it.
+
+7
+00:01:55,852 --> 00:02:10,268
+Approve it, and the run resumes. The developer agent edits only its fix branch. Verify passes on the first try, the reviewer approves, and the flow completes. About two minutes of agent time, and sixty three cents at list price.
+
+8
+00:02:11,468 --> 00:02:32,161
+Verify is not a model's opinion. It checks three things. The whole test suite passes on the fix branch: seven of seven. The new tests fail on the original code: three failures, which proves they really reproduce the defect. And the branch changes both code and tests. If any check fails, the work goes back to the developer, up to three times.
+
+9
+00:02:33,361 --> 00:02:45,947
+The reviewer has to approve every acceptance criterion, with evidence. It approved, and raised one low severity follow up. If its verdict is missing or unreadable, that counts as not approved. The flow fails closed.
+
+10
+00:02:47,147 --> 00:03:05,445
+The last stage writes the pull request from the run's own files: the root cause, the diff, the red and green proof, the review, and who approved the plan. It never pushes unless you ask. Re-run the PR stage with DEFECT_FIX_OPEN_PR=1, and it pushes the branch and opens the pull request with the GitHub CLI.
+
+11
+00:03:06,645 --> 00:03:23,967
+To use it on your own code, point repo at your project and pass your defect as an HTML page. A page exported from Jira works too: intake falls back to the page title and body. Nothing ever writes back to Jira. Every agent runs on your Claude login through Claude Code, with no API keys.
+
+12
+00:03:25,167 --> 00:03:32,393
+The code, this demo, and the full example run are on GitHub, at yeshwanth-vijay/agent-fleet-harness.

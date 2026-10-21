@@ -60,6 +60,19 @@ python run_flow.py --resume <run_id> --approve <stage>
 python run_flow.py --resume <run_id> --rerun <stage>
 ```
 
+## Defect to fix
+
+[![Intro video: Jira defect to reviewed fix](docs/media/defect-to-fix-intro.png)](docs/media/defect-to-fix-intro.mp4)
+
+A flow that takes a defect from an HTML page (a Jira replacement: no tracker is contacted or changed) to a pull request. First it finds the root cause and waits for you to approve the plan. Then it writes regression tests and the fix on its own branch, proves the tests fail on the original code and pass on the fix, and has an independent reviewer check every acceptance criterion. Pass and fail are decided by code, and nothing is pushed unless you ask.
+
+```bash
+python run_flow.py --flow defect-to-fix --repo demo/taskboard --input defect=demo/jira-replacement/DEMO-101.html
+python run_flow.py --resume <run_id> --approve approve-plan --by "your name"
+```
+
+How to use it, the page format and the guardrails: [docs/defect-to-fix.md](docs/defect-to-fix.md). A full example run, which cost $0.63: [docs/example-run/DEMO-101](docs/example-run/DEMO-101/).
+
 ## License
 
 MIT

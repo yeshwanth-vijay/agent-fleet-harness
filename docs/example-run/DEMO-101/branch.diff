@@ -1,0 +1,51 @@
+diff --git a/demo/taskboard/taskboard/tasks.py b/demo/taskboard/taskboard/tasks.py
+index d58ddd4..d7878ae 100644
+--- a/demo/taskboard/taskboard/tasks.py
++++ b/demo/taskboard/taskboard/tasks.py
+@@ -22,9 +22,7 @@ def load(path: str | Path) -> list[Task]:
+ 
+ 
+ def is_overdue(task: Task, today: date) -> bool:
+-    if task.due is None:
+-        return False
+-    return task.due <= today
++    return not task.done and task.due is not None and task.due < today
+ 
+ 
+ def overdue(tasks: list[Task], today: date) -> list[Task]:
+diff --git a/demo/taskboard/tests/test_tasks.py b/demo/taskboard/tests/test_tasks.py
+index 6b85f78..8bb8fb7 100644
+--- a/demo/taskboard/tests/test_tasks.py
++++ b/demo/taskboard/tests/test_tasks.py
+@@ -1,6 +1,6 @@
+ from datetime import date
+ 
+-from taskboard.tasks import Task, due_soon, is_overdue, summary
++from taskboard.tasks import Task, due_soon, is_overdue, overdue, summary
+ 
+ TODAY = date(2026, 10, 21)
+ 
+@@ -21,3 +21,23 @@ def test_due_soon_counts_open_tasks_in_the_next_three_days():
+ def test_summary_counts_total_open_and_done():
+     s = summary([Task("a"), Task("b", done=True)], TODAY)
+     assert (s["total"], s["open"], s["done"]) == (2, 1, 1)
++
++
++def test_task_due_today_is_not_overdue():
++    assert not is_overdue(Task("a", TODAY), TODAY)
++
++
++def test_completed_task_is_never_overdue():
++    assert not is_overdue(Task("a", date(2026, 10, 15), done=True), TODAY)
++
++
++def test_summary_and_overdue_list_match_defect_sample():
++    tasks = [
++        Task("Renew TLS certificate", date(2026, 10, 19)),
++        Task("Send invoice batch", TODAY),
++        Task("Close Q3 books", date(2026, 10, 15), done=True),
++        Task("Update onboarding guide", date(2026, 10, 23)),
++        Task("Archive old tickets"),
++    ]
++    assert summary(tasks, TODAY)["overdue"] == 1
++    assert [t.title for t in overdue(tasks, TODAY)] == ["Renew TLS certificate"]
